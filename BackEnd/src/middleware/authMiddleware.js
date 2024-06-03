@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/userModel.js';
+import userModel from '../models/userModel.js';
 
 const auth = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -14,7 +14,7 @@ const auth = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
+        const user = await userModel.findById(decoded.id);
         if (!user || !user.status) {
             return res.status(401).json({ message: 'User not authorized or inactive' });
         }

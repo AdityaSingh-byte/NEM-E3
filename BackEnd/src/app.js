@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv, { config } from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
+import cors from 'cors';
 config();
 const app=express();
 app.use(express.json());
@@ -15,6 +16,7 @@ app.get('/',async(req,res)=>{
     }catch(err){console.log(err)}
  
 })
+app.use(cors());
 app.use('/',authRoutes);
 app.listen(port,async()=>{
     try{
