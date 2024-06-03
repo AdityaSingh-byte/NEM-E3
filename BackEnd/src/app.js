@@ -3,6 +3,7 @@ import dotenv, { config } from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import cors from 'cors';
+import userRouter from './routes/userRoutes.js';
 config();
 const app=express();
 app.use(express.json());
@@ -18,6 +19,7 @@ app.get('/',async(req,res)=>{
 })
 app.use(cors());
 app.use('/',authRoutes);
+app.use('/user',userRouter);
 app.listen(port,async()=>{
     try{
         await connectDB(db_uri);
