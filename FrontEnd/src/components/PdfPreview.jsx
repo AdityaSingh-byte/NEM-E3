@@ -6,7 +6,7 @@ const PdfPreview = ({ pdfId }) => {
         <div>
             <h2>PDF Preview</h2>
             <iframe 
-                src={`http://localhost:5000/api/view/${pdfId}`} 
+                src={`https://nem-e3.onrender.com/api/view/${pdfId}`} 
                 width="100%" 
                 height="600px"
                 title="PDF Preview"

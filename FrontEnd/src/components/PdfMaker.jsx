@@ -51,7 +51,7 @@ const PdfMaker = () => {
     });
   
     try {
-      const response = await fetch('http://localhost:3000/api/books/generate-pdf', {
+      const response = await fetch('https://nem-e3.onrender.com/api/books/generate-pdf', {
         method: 'POST',
         body: data,
         headers: {
