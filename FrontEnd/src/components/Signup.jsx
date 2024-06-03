@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import '../style/login.css';
+import { useNavigate } from 'react-router-dom';
 
 const Signup = () => {
 
   const [signupData, setSignupData] = useState({ username: '', email: '', password: '', role: 'member' });
   const [error, setError] = useState('');
-
+  const nav = useNavigate();
   const handleChange = (e, setState) => {
     setState(prevState => ({
       ...prevState,
@@ -27,6 +28,7 @@ const Signup = () => {
       console.log(data)
       if (response.ok) {
         alert(data.message);
+        nav('/login');
       } else {
         setError(data.message);
       }

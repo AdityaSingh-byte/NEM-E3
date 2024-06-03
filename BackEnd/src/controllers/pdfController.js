@@ -1,76 +1,61 @@
-// controllers/pdfController.js
-import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import PDF from '../models/PDF.js';
+import { jsPDF } from 'jspdf';
+import booksModel from '../models/bookModel.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+export const generatePDF = async (req, res) => {
+  const formData = req.body;
 
-export const createPDF = async (req, res) => {
-    const { author, title, internalPages } = req.body;
-    const pdfData = {
-        author,
-        title,
-        frontCoverImage: req.files['frontCover'][0].path,
-        backCoverImage: req.files['backCover'][0].path,
-        internalPages: JSON.parse(internalPages).map((page, index) => ({
-            ...page,
-            backgroundImage: req.files['internalPages'][index]?.path || ''
-        }))
-    };
+  try {
+    const internalPages = JSON.parse(formData.internalPages || '[]');
 
-    const newPDF = new PDF(pdfData);
-    await newPDF.save();
-
-    // Generate PDF
-    const doc = new PDFDocument();
-    const filePath = `./pdfs/${newPDF._id}.pdf`;
-    doc.pipe(fs.createWriteStream(filePath));
-
-    // Front Cover
-    doc.image(pdfData.frontCoverImage, 0, 0, { width: doc.page.width, height: doc.page.height });
-    doc.fontSize(25).text(pdfData.title, 100, 100);
-    doc.fontSize(20).text(`By ${pdfData.author}`, 100, 150);
-
-    // Internal Pages
-    pdfData.internalPages.forEach(page => {
-        doc.addPage();
-        if (page.backgroundImage) {
-            doc.image(page.backgroundImage, 0, 0, { width: doc.page.width, height: doc.page.height });
-        }
-        doc.text(page.content, {
-            align: page.alignment,
-            valign: 'center'
-        });
+    const newBook = new booksModel({
+      author: formData.author,
+      title: formData.title,
+      frontCoverImage: req.files.frontImage[0]?.buffer.toString('base64'),
+      backCoverImage: req.files.backImage[0]?.buffer.toString('base64'),
+      internalPages: internalPages.map((page, index) => ({
+        ...page,
+        backgroundImage: req.files[`internalBackgroundImage${index}`]?.buffer.toString('base64')
+      }))
     });
+    await newBook.save();
 
-    // Back Cover
-    doc.addPage();
-    doc.image(pdfData.backCoverImage, 0, 0, { width: doc.page.width, height: doc.page.height });
-    doc.end();
+    const doc = new jsPDF();
 
-    res.status(201).json(newPDF);
-};
+    if (newBook.frontCoverImage) {
+        const frontImageData = `data:image/jpeg;base64,${newBook.frontCoverImage}`;
+        doc.addImage(frontImageData, 'JPEG', 0, 0, 210, 297); 
+      }
+      
 
-export const getPDFs = async (req, res) => {
-    const pdfs = await PDF.find();
-    res.status(200).json(pdfs);
-};
+ 
+    doc.setFontSize(30);
+    doc.text(newBook.title, 50, 50);
+    doc.setFontSize(20);
+    doc.text(`Author: ${newBook.author}`, 50, 60);
 
-export const downloadPDF = (req, res) => {
-    const file = path.resolve(__dirname, `../pdfs/${req.params.id}.pdf`);
-    res.download(file, err => {
-        if (err) {
-            res.status(500).send({
-                message: 'Could not download the file. ' + err,
-            });
-        }
-    });
-};
+    // Add internal pages
+    for (const page of newBook.internalPages) {
+        doc.addPage(); 
+        doc.setFontSize(12);
+        doc.text(page.content, 10, 20, { align: page.alignment });
+      }
 
-export const viewPDF = (req, res) => {
-    const file = path.resolve(__dirname, `../pdfs/${req.params.id}.pdf`);
-    res.sendFile(file);
+
+    if (newBook.backCoverImage) {
+        const backImageData = `data:image/jpeg;base64,${newBook.backCoverImage}`;
+        doc.addPage(); 
+        doc.addImage(backImageData, 'JPEG', 0, 0, 210, 297);
+        doc.setFontSize(20);
+        doc.text(`Author: ${newBook.author}`, 50, 50);
+      }
+
+    const pdfBlob = doc.output('blob');
+    const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
+
+    res.setHeader('Content-Disposition', 'attachment; filename=generated.pdf');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating PDF', error });
+  }
 };

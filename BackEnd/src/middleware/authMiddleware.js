@@ -16,6 +16,7 @@ const auth = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await userModel.findById(decoded.id);
         if (!user || !user.status) {
+            
             return res.status(401).json({ message: 'User not authorized or inactive' });
         }
         req.user = user;
